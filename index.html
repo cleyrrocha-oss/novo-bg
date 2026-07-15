@@ -31,6 +31,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  // TODO Cleyr: cole aqui a config do seu projeto Firebase (mesma do Scootlink/MotoPatrol
+  // ou um projeto novo). Pegue em Firebase Console > Configuracoes do projeto > Seus apps > Config.
+  const firebaseConfig = {
+    apiKey: "COLE_AQUI",
+    authDomain: "COLE_AQUI.firebaseapp.com",
+    projectId: "COLE_AQUI",
+    storageBucket: "COLE_AQUI.appspot.com",
+    messagingSenderId: "COLE_AQUI",
+    appId: "COLE_AQUI"
+  };
+  firebase.initializeApp(firebaseConfig);
+  window.db = firebase.firestore();
+</script>
 <script type="text/babel">
 const {useState,useEffect,useRef} = React;
 
@@ -179,11 +195,11 @@ const COMMUNITIES = {
     label: "Doação", icon: "🩸", color: G.rose, bg: G.roseDim,
     desc: "Conecte-se com doadores e salve vidas.",
     items: [
-      { name: "Sangue", icon: "🩸", members: "5.6k", active: 220 },
-      { name: "Medula Óssea", icon: "🦴", members: "2.1k", active: 89 },
-      { name: "Órgãos", icon: "❤️‍🩹", members: "1.8k", active: 70 },
-      { name: "Plasma", icon: "💉", members: "980", active: 37 },
-      { name: "Leite Materno", icon: "🍼", members: "760", active: 28 },
+      { name: "Sangue", icon: "🩸", members: "5.6k", active: 220, link: "https://www.gov.br/saude/pt-br/campanhas-da-saude/2025/doacao-de-sangue", linkLabel: "Encontrar hemocentro" },
+      { name: "Medula Óssea", icon: "🦴", members: "2.1k", active: 89, link: "https://redome.inca.gov.br/", linkLabel: "Cadastrar no REDOME" },
+      { name: "Órgãos", icon: "❤️‍🩹", members: "1.8k", active: 70, link: "https://www.gov.br/saude/pt-br/campanhas-da-saude/2025/doacao-de-orgaos", linkLabel: "Saiba como ser doador" },
+      { name: "Plasma", icon: "💉", members: "980", active: 37, link: "https://www.gov.br/saude/pt-br/campanhas-da-saude/2025/doacao-de-sangue", linkLabel: "Encontrar hemocentro" },
+      { name: "Leite Materno", icon: "🍼", members: "760", active: 28, link: "https://rblh.fiocruz.br/", linkLabel: "Encontrar banco de leite" },
     ]
   },
   espiritualidade: {
@@ -202,12 +218,12 @@ const COMMUNITIES = {
     label: "Pesquisa de Saúde Pública", icon: "📊", color: G.primary, bg: G.primaryDim,
     desc: "Contribua com dados para monitorar a saúde coletiva do Brasil.",
     items: [
-      { name: "Saúde Mental Regional", icon: "🗺️", members: "4.1k", active: 183 },
-      { name: "Surtos & Epidemias", icon: "🦠", members: "2.9k", active: 128 },
-      { name: "Doenças Raras", icon: "🔬", members: "1.2k", active: 49 },
-      { name: "Saúde da Mulher", icon: "♀️", members: "3.4k", active: 151 },
-      { name: "Saúde do Idoso", icon: "👴", members: "1.8k", active: 74 },
-      { name: "Saúde Infantil", icon: "👶", members: "2.6k", active: 110 },
+      { name: "Saúde Mental Regional", icon: "🗺️", members: "4.1k", active: 183, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
+      { name: "Surtos & Epidemias", icon: "🦠", members: "2.9k", active: 128, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
+      { name: "Doenças Raras", icon: "🔬", members: "1.2k", active: 49, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
+      { name: "Saúde da Mulher", icon: "♀️", members: "3.4k", active: 151, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
+      { name: "Saúde do Idoso", icon: "👴", members: "1.8k", active: 74, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
+      { name: "Saúde Infantil", icon: "👶", members: "2.6k", active: 110, link: "https://www.gov.br/saude/pt-br", linkLabel: "Ver dados oficiais (Min. Saúde)" },
     ]
   },
 };
@@ -354,47 +370,25 @@ function OnboardingScreen({ onNext }) {
 }
 
 // ── Feed Social (componente reutilizável) ─────────────────────────────────────
-function SocialFeed({ posts, setPosts, currentUser, communityName }) {
+function SocialFeed({ posts, currentUser, communityName, onSubmitPost, onToggleLike, onToggleComments, onSubmitComment }) {
   const [newPost, setNewPost] = useState("");
   const [newComment, setNewComment] = useState({});
   const feedRef = useRef(null);
 
   const submitPost = () => {
     if (!newPost.trim()) return;
-    const post = {
-      id: Date.now(),
-      user: currentUser.name,
-      avatar: currentUser.avatar,
-      time: "agora",
-      text: newPost.trim(),
-      likes: 0,
-      liked: false,
-      comments: [],
-      showComments: false,
-      isNew: true,
-    };
-    setPosts(prev => [post, ...prev]);
+    onSubmitPost(newPost.trim());
     setNewPost("");
   };
 
-  const toggleLike = (id) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      return { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 };
-    }));
-  };
+  const toggleLike = (id) => onToggleLike(id);
 
-  const toggleComments = (id) => {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, showComments: !p.showComments } : p));
-  };
+  const toggleComments = (id) => onToggleComments(id);
 
   const submitComment = (postId) => {
     const text = newComment[postId]?.trim();
     if (!text) return;
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      return { ...p, comments: [...p.comments, { user: currentUser.name, avatar: currentUser.avatar, text }] };
-    }));
+    onSubmitComment(postId, text);
     setNewComment(prev => ({ ...prev, [postId]: "" }));
   };
 
@@ -529,13 +523,82 @@ function CommunityListScreen({ moduleKey, onBack, onSelectItem }) {
   );
 }
 
-// ── Sub-tela: Feed da Comunidade (social interativo) ──────────────────────────
-function CommunityFeedScreen({ item, mod, onBack, currentUser, allPosts, setAllPosts }) {
-  const key = `${mod.label}-${item.name}`;
-  const posts = allPosts[key] || INITIAL_POSTS.default.map(p => ({ ...p }));
+// ── Sub-tela: Feed da Comunidade (social interativo, sincronizado via Firestore) ──
+function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
+  const key = `${mod.label}-${item.name}`.replace(/\//g, "-");
+  const [dbPosts, setDbPosts] = useState(null); // null = carregando
 
-  const setPosts = (updater) => {
-    setAllPosts(prev => ({ ...prev, [key]: typeof updater === "function" ? updater(prev[key] || INITIAL_POSTS.default.map(p => ({ ...p }))) : updater }));
+  useEffect(() => {
+    if (!window.db) { setDbPosts([]); return; }
+    const metaRef = window.db.collection("bagagens_posts").doc(key);
+    const colRef = metaRef.collection("posts");
+
+    // Semeia os posts iniciais só na primeira vez que a comunidade é aberta por alguém
+    metaRef.get().then(snap => {
+      if (!snap.exists) {
+        const batch = window.db.batch();
+        batch.set(metaRef, { seeded: true });
+        INITIAL_POSTS.default.forEach((p, idx) => {
+          batch.set(colRef.doc(), {
+            user: p.user, avatar: p.avatar, text: p.text,
+            likedBy: [], likesSeed: p.likes, comments: p.comments || [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            order: idx,
+          });
+        });
+        batch.commit().catch(() => {});
+      }
+    }).catch(() => {});
+
+    const unsub = colRef.orderBy("createdAt", "desc").onSnapshot(
+      snap => setDbPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => setDbPosts([])
+    );
+    return () => unsub();
+  }, [key]);
+
+  const [openComments, setOpenComments] = useState({});
+
+  const posts = (dbPosts || []).map(p => ({
+    id: p.id,
+    user: p.user, avatar: p.avatar, text: p.text, time: "agora",
+    likes: (p.likedBy?.length || 0) + (p.likesSeed || 0),
+    liked: (p.likedBy || []).includes(currentUser.uid),
+    comments: p.comments || [],
+    showComments: !!openComments[p.id],
+  }));
+
+  const colRef = () => window.db.collection("bagagens_posts").doc(key).collection("posts");
+
+  const handleSubmitPost = (text) => {
+    if (!window.db) return;
+    colRef().add({
+      user: currentUser.name, avatar: currentUser.avatar, text,
+      likedBy: [], likesSeed: 0, comments: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch(() => {});
+  };
+
+  const handleToggleLike = (id) => {
+    if (!window.db) return;
+    const target = (dbPosts || []).find(p => p.id === id);
+    const already = (target?.likedBy || []).includes(currentUser.uid);
+    colRef().doc(id).update({
+      likedBy: already
+        ? firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        : firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+    }).catch(() => {});
+  };
+
+  const handleToggleComments = (id) => {
+    setOpenComments(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleSubmitComment = (id, text) => {
+    if (!window.db) return;
+    colRef().doc(id).update({
+      comments: firebase.firestore.FieldValue.arrayUnion({ user: currentUser.name, avatar: currentUser.avatar, text }),
+    }).catch(() => {});
   };
 
   return (
@@ -554,7 +617,31 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser, allPosts, setAllP
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }}>
-        <SocialFeed posts={posts} setPosts={setPosts} currentUser={currentUser} communityName={item.name} />
+        {item.link && (
+          <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+            <div className="fadeUp" style={{ background: `linear-gradient(135deg,${G.primary}14,${G.accent}10)`, borderRadius: 18, padding: "14px 16px", border: `1.5px solid ${G.primary}22`, display: "flex", alignItems: "center", gap: 12, marginBottom: 14, cursor: "pointer" }}>
+              <div style={{ fontSize: 24 }}>{item.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 13, color: G.primary }}>{item.linkLabel || "Site oficial"}</div>
+                <div style={{ color: G.textMuted, fontSize: 11, marginTop: 1 }}>Fonte oficial do governo · abre em nova aba</div>
+              </div>
+              <div style={{ color: G.primary, fontSize: 18 }}>↗</div>
+            </div>
+          </a>
+        )}
+        {dbPosts === null ? (
+          <div style={{ textAlign: "center", color: G.textMuted, fontSize: 13, padding: "24px 0" }}>Carregando conversas...</div>
+        ) : (
+          <SocialFeed
+            posts={posts}
+            currentUser={currentUser}
+            communityName={item.name}
+            onSubmitPost={handleSubmitPost}
+            onToggleLike={handleToggleLike}
+            onToggleComments={handleToggleComments}
+            onSubmitComment={handleSubmitComment}
+          />
+        )}
       </div>
     </div>
   );
@@ -573,6 +660,13 @@ function HomeScreen({ onOpenModule, currentUser }) {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [chat, isLoading]);
 
+  // Checagem de crise: SEMPRE local, nunca depende de rede/API, e tem prioridade sobre tudo.
+  const CRISIS_REPLY = "Obrigado por compartilhar isso comigo — isso exigiu muita coragem. Esse peso é grande demais para carregar sozinho. Por favor, procure o CVV agora: ligue 188 (24h, gratuito) ou acesse cvv.org.br. Você merece apoio profissional de verdade. Estou aqui com você. 💙";
+  const isCrisisMessage = (msg) => {
+    const m = msg.toLowerCase();
+    return m.includes("suicid") || m.includes("me matar") || m.includes("não quero mais viver") || m.includes("nao quero mais viver") || m.includes("acabar com tudo") || m.includes("acabar com a minha vida");
+  };
+
   const getAIResponse = (msg) => {
     const m = msg.toLowerCase();
     if (m.includes("ansios") || m.includes("ansiedade") || m.includes("nervos") || m.includes("agitad"))
@@ -585,8 +679,6 @@ function HomeScreen({ onOpenModule, currentUser }) {
       return "Entendo como é difícil lidar com isso no dia a dia. Às vezes a maior ajuda vem de quem já passou pelo mesmo. Temos comunidades de Enfermidades aqui com pessoas que podem compartilhar experiências reais sobre tratamentos, custos e o que funcionou para elas. Quer explorar? 🏥";
     if (m.includes("fé") || m.includes("deus") || m.includes("oraç") || m.includes("rezar") || m.includes("espiritualidade") || m.includes("espiritual"))
       return "A fé é um dos pilares mais poderosos na jornada de cura. Temos um espaço especial aqui no Bagagens dedicado à espiritualidade — correntes de oração, meditação e fortalecimento interior. Muitas pessoas encontraram alívio por lá. 🙏✨";
-    if (m.includes("suicid") || m.includes("me matar") || m.includes("não quero mais viver") || m.includes("nao quero mais viver"))
-      return "Obrigado por compartilhar isso comigo — isso exigiu muita coragem. Esse peso é grande demais para carregar sozinho. Por favor, procure o CVV agora: ligue 188 (24h, gratuito) ou acesse cvv.org.br. Você merece apoio profissional de verdade. Estou aqui com você. 💙";
     if (m.includes("oi") || m.includes("olá") || m.includes("bom dia") || m.includes("boa tarde") || m.includes("boa noite"))
       return "Oi! Que bom ter você aqui 🌿 O Bagagens é o seu espaço para abrir a mala e respirar. Como você está se sentindo hoje? Pode falar à vontade.";
     if (m.includes("obrigad") || m.includes("ajudou") || m.includes("melhor"))
@@ -604,16 +696,39 @@ function HomeScreen({ onOpenModule, currentUser }) {
     return respostas[Math.floor(Math.random() * respostas.length)];
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!message.trim() || isLoading) return;
     const userMsg = message.trim();
     setChat(c => [...c, { from: "user", text: userMsg }]);
     setMessage("");
     setIsLoading(true);
-    setTimeout(() => {
+
+    // Crise: resposta imediata e local, nunca espera por rede.
+    if (isCrisisMessage(userMsg)) {
+      setTimeout(() => {
+        setChat(c => [...c, { from: "ai", text: CRISIS_REPLY }]);
+        setIsLoading(false);
+      }, 400);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMsg }),
+      });
+      if (!res.ok) throw new Error("api indisponível");
+      const data = await res.json();
+      if (!data.reply) throw new Error("resposta vazia");
+      setChat(c => [...c, { from: "ai", text: data.reply }]);
+    } catch (e) {
+      // Fallback: IA local por palavras-chave, enquanto /api/chat não está configurada
+      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
       setChat(c => [...c, { from: "ai", text: getAIResponse(userMsg) }]);
+    } finally {
       setIsLoading(false);
-    }, 1200 + Math.random() * 800);
+    }
   };
 
   const modules = [
@@ -738,8 +853,16 @@ function App() {
   const [moduleKey, setModuleKey] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedMod, setSelectedMod] = useState(null);
-  const [currentUser, setCurrentUser] = useState({ name: "Visitante", avatar: "👤" });
-  const [allPosts, setAllPosts] = useState({});
+  const [currentUser, setCurrentUser] = useState({ name: "Visitante", avatar: "👤", uid: null });
+
+  useEffect(() => {
+    let uid = localStorage.getItem("bagagens_uid");
+    if (!uid) {
+      uid = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem("bagagens_uid", uid);
+    }
+    setCurrentUser(prev => ({ ...prev, uid }));
+  }, []);
 
   const openModule = key => { setModuleKey(key); setScreen("communityList"); };
   const selectItem = (item, mod) => { setSelectedItem(item); setSelectedMod(mod); setScreen("communityFeed"); };
@@ -747,7 +870,7 @@ function App() {
   return (
     <>
       <style>{css}</style>
-      {screen === "auth" && <AuthScreen onNext={() => setScreen("onboarding")} onSetUser={setCurrentUser} />}
+      {screen === "auth" && <AuthScreen onNext={() => setScreen("onboarding")} onSetUser={u => setCurrentUser(prev => ({ ...prev, ...u }))} />}
       {screen === "onboarding" && <OnboardingScreen onNext={() => setScreen("home")} />}
       {screen === "home" && <HomeScreen onOpenModule={openModule} currentUser={currentUser} />}
       {screen === "communityList" && <CommunityListScreen moduleKey={moduleKey} onBack={() => setScreen("home")} onSelectItem={selectItem} />}
@@ -756,8 +879,6 @@ function App() {
           item={selectedItem} mod={selectedMod}
           onBack={() => setScreen("communityList")}
           currentUser={currentUser}
-          allPosts={allPosts}
-          setAllPosts={setAllPosts}
         />
       )}
     </>
