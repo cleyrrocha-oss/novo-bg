@@ -1,4 +1,4 @@
-const CACHE = 'bagagens-v1';
+const CACHE = 'bagagens-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
