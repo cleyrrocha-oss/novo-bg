@@ -33,19 +33,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
   // TODO Cleyr: cole aqui a config do seu projeto Firebase (mesma do Scootlink/MotoPatrol
   // ou um projeto novo). Pegue em Firebase Console > Configuracoes do projeto > Seus apps > Config.
   const firebaseConfig = {
-    apiKey: "COLE_AQUI",
-    authDomain: "COLE_AQUI.firebaseapp.com",
-    projectId: "COLE_AQUI",
-    storageBucket: "COLE_AQUI.appspot.com",
-    messagingSenderId: "COLE_AQUI",
-    appId: "COLE_AQUI"
+    apiKey: "AIzaSyCJDKO_Hk7qJ78i7euVGJO5JAhtm2srDbc",
+    authDomain: "bagagens-prod.firebaseapp.com",
+    projectId: "bagagens-prod",
+    storageBucket: "bagagens-prod.firebasestorage.app",
+    messagingSenderId: "560165422680",
+    appId: "1:560165422680:web:ce8a09c0703f2a12d96c2d"
   };
   firebase.initializeApp(firebaseConfig);
   window.db = firebase.firestore();
+
+  // ── Auth anônimo: exigido pelas regras do Firestore, sem tela de login ──
+  window.authReady = new Promise((resolve) => {
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) resolve(user);
+    });
+  });
+  firebase.auth().signInAnonymously().catch((e) => {
+    console.warn("⚠️ Falha no login anônimo:", e.message);
+  });
 </script>
 <script type="text/babel">
 const {useState,useEffect,useRef} = React;
@@ -530,30 +541,33 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
 
   useEffect(() => {
     if (!window.db) { setDbPosts([]); return; }
-    const metaRef = window.db.collection("bagagens_posts").doc(key);
-    const colRef = metaRef.collection("posts");
+    let unsub = () => {};
+    window.authReady.then(() => {
+      const metaRef = window.db.collection("bagagens_posts").doc(key);
+      const colRef = metaRef.collection("posts");
 
-    // Semeia os posts iniciais só na primeira vez que a comunidade é aberta por alguém
-    metaRef.get().then(snap => {
-      if (!snap.exists) {
-        const batch = window.db.batch();
-        batch.set(metaRef, { seeded: true });
-        INITIAL_POSTS.default.forEach((p, idx) => {
-          batch.set(colRef.doc(), {
-            user: p.user, avatar: p.avatar, text: p.text,
-            likedBy: [], likesSeed: p.likes, comments: p.comments || [],
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            order: idx,
+      // Semeia os posts iniciais só na primeira vez que a comunidade é aberta por alguém
+      metaRef.get().then(snap => {
+        if (!snap.exists) {
+          const batch = window.db.batch();
+          batch.set(metaRef, { seeded: true });
+          INITIAL_POSTS.default.forEach((p, idx) => {
+            batch.set(colRef.doc(), {
+              user: p.user, avatar: p.avatar, text: p.text,
+              likedBy: [], likesSeed: p.likes, comments: p.comments || [],
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              order: idx,
+            });
           });
-        });
-        batch.commit().catch(() => {});
-      }
-    }).catch(() => {});
+          batch.commit().catch(() => {});
+        }
+      }).catch(() => {});
 
-    const unsub = colRef.orderBy("createdAt", "desc").onSnapshot(
-      snap => setDbPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      () => setDbPosts([])
-    );
+      unsub = colRef.orderBy("createdAt", "desc").onSnapshot(
+        snap => setDbPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        () => setDbPosts([])
+      );
+    });
     return () => unsub();
   }, [key]);
 
@@ -572,22 +586,22 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
 
   const handleSubmitPost = (text) => {
     if (!window.db) return;
-    colRef().add({
+    window.authReady.then(() => colRef().add({
       user: currentUser.name, avatar: currentUser.avatar, text,
       likedBy: [], likesSeed: 0, comments: [],
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    }).catch(() => {});
+    }).catch(() => {}));
   };
 
   const handleToggleLike = (id) => {
     if (!window.db) return;
     const target = (dbPosts || []).find(p => p.id === id);
     const already = (target?.likedBy || []).includes(currentUser.uid);
-    colRef().doc(id).update({
+    window.authReady.then(() => colRef().doc(id).update({
       likedBy: already
         ? firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
         : firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-    }).catch(() => {});
+    }).catch(() => {}));
   };
 
   const handleToggleComments = (id) => {
@@ -596,9 +610,9 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
 
   const handleSubmitComment = (id, text) => {
     if (!window.db) return;
-    colRef().doc(id).update({
+    window.authReady.then(() => colRef().doc(id).update({
       comments: firebase.firestore.FieldValue.arrayUnion({ user: currentUser.name, avatar: currentUser.avatar, text }),
-    }).catch(() => {});
+    }).catch(() => {}));
   };
 
   return (
