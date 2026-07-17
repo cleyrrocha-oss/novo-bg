@@ -727,7 +727,7 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
             </div>
           </a>
         )}
-        {mod.key === "espiritualidade" && <SpiritualContent item={item} />}
+        {mod.label === "Espiritualidade" && <SpiritualContent item={item} />}
         {dbPosts === null ? (
           <div style={{ textAlign: "center", color: G.textMuted, fontSize: 13, padding: "24px 0" }}>Carregando conversas...</div>
         ) : (
