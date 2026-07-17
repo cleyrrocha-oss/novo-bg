@@ -239,6 +239,73 @@ const COMMUNITIES = {
   },
 };
 
+// ── Conteúdo específico de cada item da seção Espiritualidade ────────────────
+const SPIRITUAL_CONTENT = {
+  "Correntes de Oração": {
+    type: "prayers",
+    intro: "Ore com a gente ou deixe seu pedido de oração no campo abaixo — a comunidade caminha junto com você.",
+    items: [
+      { title: "Oração pela Paz", text: "Senhor, acalma meu coração inquieto e me dá a paz que só vem de Ti. Ajuda-me a confiar mesmo quando não entendo o caminho. Amém." },
+      { title: "Oração pela Saúde", text: "Deus de todo cuidado, toca este corpo e esta mente com Tua força restauradora. Que cada dia traga um pouco mais de alívio e esperança. Amém." },
+      { title: "Oração pela Força", text: "Pai, quando minhas forças acabam, que as Tuas sejam suficientes. Sustenta-me para seguir mais um passo hoje. Amém." },
+      { title: "Oração por Alguém Querido", text: "Senhor, coloco diante de Ti quem eu amo. Cuida, protege e conforta essa pessoa como só Tu sabes fazer. Amém." },
+      { title: "Oração pela Esperança", text: "Deus, mesmo nos dias nublados, ajuda-me a enxergar que essa fase vai passar. Renova em mim a esperança. Amém." },
+    ]
+  },
+  "Meditação": {
+    type: "meditations",
+    intro: "Escolha uma prática e reserve alguns minutos só para você.",
+    items: [
+      { title: "Respiração Consciente", duration: "5 min", text: "Sente-se confortavelmente. Inspire contando até 4, segure por 4, solte em 6. Repita por alguns minutos, notando o ar entrando e saindo, sem julgar os pensamentos que surgirem." },
+      { title: "Escaneamento Corporal", duration: "8 min", text: "Feche os olhos e leve a atenção aos pés, subindo devagar por cada parte do corpo, relaxando cada músculo tenso que encontrar pelo caminho." },
+      { title: "Meditação da Gratidão", duration: "6 min", text: "Respire fundo e traga à mente três coisas boas do seu dia, por menores que sejam. Permita-se sentir gratidão por cada uma, sem pressa." },
+      { title: "Silêncio Interior", duration: "10 min", text: "Sente-se em silêncio, sem tentar controlar os pensamentos. Apenas observe-os passar como nuvens, voltando sempre a atenção para a respiração." },
+    ]
+  },
+  "Leitura Sagrada": {
+    type: "readings",
+    intro: "Pequenas passagens para reflexão — leia com calma e deixe repousar.",
+    items: [
+      { ref: "Salmos 23:1-3", text: "O pastor cuida de cada detalhe da vida de quem confia nele, guiando para lugares de descanso e renovação." },
+      { ref: "Mateus 11:28", text: "Um convite ao descanso para quem está cansado e sobrecarregado." },
+      { ref: "Filipenses 4:6-7", text: "Um lembrete de que a ansiedade pode ser entregue em oração, trocada por uma paz que ultrapassa o entendimento." },
+      { ref: "Isaías 41:10", text: "Uma promessa de presença e força para quem enfrenta o medo." },
+      { ref: "Provérbios 3:5-6", text: "Um convite a confiar além do que os próprios olhos conseguem entender." },
+    ]
+  },
+  "Gratidão Diária": {
+    type: "gratitude",
+    intro: "Pequenos exercícios para cultivar gratidão no dia a dia.",
+    items: [
+      { title: "3 Coisas Boas", text: "Antes de dormir, pense em três coisas boas que aconteceram hoje, mesmo pequenas — um café gostoso, uma mensagem carinhosa, um momento de calma." },
+      { title: "Gratidão pelo Corpo", text: "Agradeça hoje por algo que seu corpo permitiu você fazer, mesmo em dias difíceis." },
+      { title: "Carta de Gratidão", text: "Pense em alguém que fez diferença na sua vida e, mentalmente ou por escrito, agradeça a essa pessoa." },
+      { title: "Gratidão pelo Presente", text: "Observe ao redor agora e encontre uma coisa simples pela qual você é grato neste exato momento." },
+    ]
+  },
+  "Cura Interior": {
+    type: "affirmations",
+    intro: "Afirmações para repetir quando precisar de acolhimento.",
+    items: [
+      { text: "Eu sou digno de cuidado e cura, no meu próprio tempo." },
+      { text: "Minha dor não define quem eu sou; ela é parte da minha jornada, não o fim dela." },
+      { text: "Eu permito a mim mesmo sentir, processar e seguir em frente, um dia de cada vez." },
+      { text: "Cada pequeno passo em direção à cura já é motivo de orgulho." },
+      { text: "Eu mereço paciência comigo mesmo, especialmente nos dias mais difíceis." },
+    ]
+  },
+  "Multifé": {
+    type: "reflections",
+    intro: "Reflexões que atravessam diferentes caminhos de fé.",
+    items: [
+      { text: "Independente do caminho de fé que você segue, o desejo de paz interior e conexão com algo maior é universal." },
+      { text: "Muitas tradições ensinam que a compaixão começa com a forma como tratamos a nós mesmos." },
+      { text: "O silêncio e a contemplação, presentes em quase toda tradição espiritual, são portas para o autoconhecimento." },
+      { text: "Respeitar o caminho de fé do outro, mesmo diferente do seu, é também um exercício espiritual." },
+    ]
+  },
+};
+
 // ── Posts iniciais por comunidade ─────────────────────────────────────────────
 const INITIAL_POSTS = {
   default: [
@@ -381,7 +448,7 @@ function OnboardingScreen({ onNext }) {
 }
 
 // ── Feed Social (componente reutilizável) ─────────────────────────────────────
-function SocialFeed({ posts, currentUser, communityName, onSubmitPost, onToggleLike, onToggleComments, onSubmitComment }) {
+function SocialFeed({ posts, currentUser, communityName, placeholder, onSubmitPost, onToggleLike, onToggleComments, onSubmitComment }) {
   const [newPost, setNewPost] = useState("");
   const [newComment, setNewComment] = useState({});
   const feedRef = useRef(null);
@@ -412,7 +479,7 @@ function SocialFeed({ posts, currentUser, communityName, onSubmitPost, onToggleL
           <textarea
             value={newPost}
             onChange={e => setNewPost(e.target.value)}
-            placeholder={`Compartilhe sua experiência em ${communityName}...`}
+            placeholder={placeholder || `Compartilhe sua experiência em ${communityName}...`}
             rows={3}
             style={{ flex: 1, background: G.surfaceAlt, border: `1.5px solid ${G.border}`, borderRadius: 14, padding: "10px 14px", color: G.text, fontSize: 14, outline: "none", resize: "none", fontFamily: "'Nunito',sans-serif", lineHeight: 1.5 }}
             onFocus={e => e.target.style.border = `1.5px solid ${G.accent}`}
@@ -535,6 +602,41 @@ function CommunityListScreen({ moduleKey, onBack, onSelectItem }) {
 }
 
 // ── Sub-tela: Feed da Comunidade (social interativo, sincronizado via Firestore) ──
+// ── Conteúdo específico da seção Espiritualidade (orações, meditações, leituras...) ──
+function SpiritualContent({ item }) {
+  const data = SPIRITUAL_CONTENT[item.name];
+  if (!data) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {data.intro && (
+        <div style={{ color: G.textMuted, fontSize: 13, marginBottom: 10, textAlign: "center", lineHeight: 1.4 }}>{data.intro}</div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {data.items.map((it, i) => (
+          <div key={i} style={{ background: "#fff", borderRadius: 16, padding: "14px 16px", border: `1px solid ${G.border}`, boxShadow: G.shadow }}>
+            {data.type === "readings" ? (
+              <>
+                <div style={{ fontWeight: 800, fontSize: 13, color: G.gold, marginBottom: 4 }}>{it.ref}</div>
+                <div style={{ color: G.text, fontSize: 14, lineHeight: 1.5 }}>{it.text}</div>
+              </>
+            ) : data.type === "affirmations" || data.type === "reflections" ? (
+              <div style={{ color: G.text, fontSize: 14, lineHeight: 1.5, fontStyle: "italic" }}>“{it.text}”</div>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: G.text }}>{it.title}</div>
+                  {it.duration && <div style={{ color: G.textMuted, fontSize: 12 }}>{it.duration}</div>}
+                </div>
+                <div style={{ color: G.textMuted, fontSize: 13, lineHeight: 1.5 }}>{it.text}</div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
   const key = `${mod.label}-${item.name}`.replace(/\//g, "-");
   const [dbPosts, setDbPosts] = useState(null); // null = carregando
@@ -543,25 +645,7 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
     if (!window.db) { setDbPosts([]); return; }
     let unsub = () => {};
     window.authReady.then(() => {
-      const metaRef = window.db.collection("bagagens_posts").doc(key);
-      const colRef = metaRef.collection("posts");
-
-      // Semeia os posts iniciais só na primeira vez que a comunidade é aberta por alguém
-      metaRef.get().then(snap => {
-        if (!snap.exists) {
-          const batch = window.db.batch();
-          batch.set(metaRef, { seeded: true });
-          INITIAL_POSTS.default.forEach((p, idx) => {
-            batch.set(colRef.doc(), {
-              user: p.user, avatar: p.avatar, text: p.text,
-              likedBy: [], likesSeed: p.likes, comments: p.comments || [],
-              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-              order: idx,
-            });
-          });
-          batch.commit().catch(() => {});
-        }
-      }).catch(() => {});
+      const colRef = window.db.collection("bagagens_posts").doc(key).collection("posts");
 
       unsub = colRef.orderBy("createdAt", "desc").onSnapshot(
         snap => setDbPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
@@ -643,6 +727,7 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
             </div>
           </a>
         )}
+        {mod.key === "espiritualidade" && <SpiritualContent item={item} />}
         {dbPosts === null ? (
           <div style={{ textAlign: "center", color: G.textMuted, fontSize: 13, padding: "24px 0" }}>Carregando conversas...</div>
         ) : (
@@ -650,6 +735,7 @@ function CommunityFeedScreen({ item, mod, onBack, currentUser }) {
             posts={posts}
             currentUser={currentUser}
             communityName={item.name}
+            placeholder={item.name === "Correntes de Oração" ? "Deixe seu pedido de oração, por você ou por alguém querido..." : undefined}
             onSubmitPost={handleSubmitPost}
             onToggleLike={handleToggleLike}
             onToggleComments={handleToggleComments}
